@@ -1,0 +1,26 @@
+# AWS WAF Security Framework - Example Variables
+# Copy this file to terraform.tfvars and customize for your environment
+
+project_name = "myapp"
+aws_region   = "us-east-1"
+
+# Required: ARN of the ALB to protect
+alb_arn = "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/my-alb/1234567890abcdef"
+
+# Required: SNS topic for CloudWatch alarm notifications
+sns_topic_arn = "arn:aws:sns:us-east-1:123456789012:waf-alerts"
+
+# Rate limiting thresholds (requests per 5-minute window per IP)
+global_rate_limit     = 2000
+api_rate_limit        = 100
+block_alarm_threshold = 1000
+
+# Optional: ISO 3166-1 alpha-2 country codes to block
+# blocked_countries = ["CN", "RU", "KP"]
+blocked_countries = []
+
+tags = {
+  Project     = "myapp-waf"
+  Environment = "production"
+  ManagedBy   = "terraform"
+}
