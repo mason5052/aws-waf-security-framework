@@ -79,6 +79,8 @@ Global eCommerce platforms face constant threats from automated bots, credential
 | 4 | API Rate Limit | URI-scoped rate limiting for `/api/` endpoints |
 | 5 | Geo Blocking | Optional geographic restriction by country code |
 
+> **Implementation Scope:** This module deploys a `REGIONAL`-scoped WebACL attached directly to the ALB. The architecture diagram above reflects the full production topology. For CloudFront WAF protection, AWS requires a separate `CLOUDFRONT`-scoped WebACL deployed in `us-east-1` — both WebACLs can run independently for layered protection across the CDN and origin tiers.
+
 ---
 
 ## Repository Structure
@@ -154,11 +156,11 @@ The GitHub Actions workflow runs on every push and PR:
 
 ## Tech Stack
 
-- **WAF:** AWS WAFv2 (WebACL, Rule Groups, IP Sets)
-- **IaC:** Terraform with input validation and CI/CD gates
-- **CDN:** CloudFront
+- **WAF:** AWS WAFv2 (WebACL, Rule Groups, IP Sets) - REGIONAL scope (ALB)
+- **IaC:** Terraform >= 1.5 with input validation, tfsec, Checkov, CI/CD gates
+- **CDN:** CloudFront (CloudFront WAF requires separate CLOUDFRONT-scoped WebACL in us-east-1)
 - **Monitoring:** CloudWatch Metrics + Alarms, SNS notifications
-- **Logging:** WAF Logs -> S3 -> analysis
+- **Logging:** CloudWatch Logs (WAF sampled requests + block events)
 - **Compliance:** GDPR/CCPA aligned
 
 ---
