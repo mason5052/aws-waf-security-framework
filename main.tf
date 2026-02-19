@@ -1,16 +1,6 @@
 # AWS WAF Security Framework - Main Configuration
 # Production-tested WAF implementation for eCommerce platforms
-
-terraform {
-  required_version = ">= 1.5.0"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
+# Version constraints defined in versions.tf
 
 # WAF WebACL
 resource "aws_wafv2_web_acl" "ecommerce" {
