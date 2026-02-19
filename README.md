@@ -1,6 +1,43 @@
 # AWS WAF Security Framework
 
-A production-tested AWS WAF implementation framework for eCommerce platforms, achieving 90%+ threat reduction across global web properties.
+[![Terraform CI](https://github.com/mason5052/aws-waf-security-framework/actions/workflows/terraform.yml/badge.svg)](https://github.com/mason5052/aws-waf-security-framework/actions/workflows/terraform.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5-844FBA?logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![AWS](https://img.shields.io/badge/AWS-WAFv2-FF9900?logo=amazonaws&logoColor=white)](https://aws.amazon.com/waf/)
+
+Production-tested AWS WAF implementation for eCommerce platforms. Achieved 90%+ threat reduction and reduced bot traffic from 30%+ to under 3% across global web properties (US, EU, AU, MX).
+
+---
+
+## Quick Start
+
+```bash
+# Clone
+git clone https://github.com/mason5052/aws-waf-security-framework.git
+cd aws-waf-security-framework
+
+# Configure
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your ALB ARN, SNS topic, and preferences
+
+# Optional: configure remote state
+cp backend.tf.example backend.tf
+# Edit backend.tf with your S3 bucket details
+
+# Deploy
+terraform init
+terraform plan
+terraform apply
+```
+
+### Prerequisites
+
+- Terraform >= 1.5.0
+- AWS CLI configured with appropriate IAM permissions
+- An existing ALB and SNS topic
+- AWS provider credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` or IAM role)
+
+---
 
 ## Problem
 
@@ -12,7 +49,7 @@ Global eCommerce platforms face constant threats from automated bots, credential
 - Manual security reviews could not keep up with evolving threats
 - Multiple regional sites (US, EU, AU, MX) each needed protection
 
-## Solution Architecture
+## Architecture
 
 ```
                     Internet
@@ -27,116 +64,71 @@ Global eCommerce platforms face constant threats from automated bots, credential
                Application Load Balancer
                   /         \
             Shopify        API Gateway
-            Frontend        (Wonder Server)
+            Frontend        (Backend)
                               |
                         Backend Services
 ```
 
 ### WAF Rule Groups
 
-1. **Bot Control** - AWS Managed Bot Control rule group for automated traffic classification
-2. **Rate Limiting** - IP-based and URI-based rate limiting to prevent abuse
-3. **IP Reputation** - AWS IP Reputation list blocking known malicious IPs
-4. **Geo Blocking** - Block traffic from non-operational regions
-5. **Custom Rules** - Application-specific rules for API protection
+| Priority | Rule | Description |
+|----------|------|-------------|
+| 1 | Bot Control | AWS Managed Bot Control for automated traffic classification |
+| 2 | IP Reputation | AWS IP Reputation list blocking known malicious IPs |
+| 3 | Global Rate Limit | IP-based rate limiting (configurable threshold) |
+| 4 | API Rate Limit | URI-scoped rate limiting for `/api/` endpoints |
+| 5 | Geo Blocking | Optional geographic restriction by country code |
 
-### Terraform Module Structure
+---
+
+## Repository Structure
 
 ```
-modules/
-  waf/
-    main.tf          # WAF WebACL and rule group definitions
-    variables.tf     # Configurable thresholds and rule parameters
-    outputs.tf       # WebACL ARN and metrics
-    rules/
-      bot-control.tf     # Bot detection rules
-      rate-limiting.tf   # Rate limiting configuration
-      ip-reputation.tf   # IP reputation lists
-      geo-blocking.tf    # Geographic restrictions
-      custom-rules.tf    # Application-specific rules
+aws-waf-security-framework/
+├── main.tf                    # WAF WebACL, rules, ALB association, CloudWatch alarm
+├── variables.tf               # Input variables with validation rules
+├── outputs.tf                 # WebACL ARN, ID, name, alarm ARN
+├── versions.tf                # Terraform and provider version constraints
+├── terraform.tfvars.example   # Example variable values (copy to terraform.tfvars)
+├── backend.tf.example         # S3 remote state backend template
+├── .gitignore                 # Terraform-specific ignores
+├── LICENSE                    # MIT License
+└── .github/
+    └── workflows/
+        └── terraform.yml      # CI: fmt, validate, tfsec, Checkov
 ```
 
-## Implementation Details
+---
 
-### Rate Limiting Configuration
+## Configuration
 
-```hcl
-# Example: API endpoint rate limiting
-resource "aws_wafv2_rate_based_statement" "api_rate_limit" {
-  limit              = 100
-  aggregate_key_type = "IP"
+All variables support input validation. See `terraform.tfvars.example` for a complete reference.
 
-  scope_down_statement {
-    byte_match_statement {
-      search_string         = "/api/"
-      field_to_match {
-        uri_path {}
-      }
-      text_transformation {
-        priority = 0
-        type     = "LOWERCASE"
-      }
-      positional_constraint = "STARTS_WITH"
-    }
-  }
-}
-```
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `project_name` | string | `ecommerce` | Resource naming prefix (lowercase, hyphens) |
+| `aws_region` | string | `us-east-1` | AWS deployment region |
+| `alb_arn` | string | required | ALB ARN to protect |
+| `sns_topic_arn` | string | required | SNS topic for alarm notifications |
+| `global_rate_limit` | number | `2000` | Requests per 5min per IP (global) |
+| `api_rate_limit` | number | `100` | API requests per 5min per IP |
+| `blocked_countries` | list(string) | `[]` | ISO 3166-1 alpha-2 country codes |
+| `block_alarm_threshold` | number | `1000` | Blocked requests to trigger alarm |
+| `tags` | map(string) | see default | Resource tags |
 
-### Bot Control
+---
 
-```hcl
-# Example: AWS Managed Bot Control
-resource "aws_wafv2_web_acl" "main" {
-  name  = "ecommerce-waf"
-  scope = "REGIONAL"
+## CI/CD Pipeline
 
-  rule {
-    name     = "AWSManagedRulesBotControlRuleSet"
-    priority = 1
+The GitHub Actions workflow runs on every push and PR:
 
-    override_action {
-      none {}
-    }
+| Job | Description |
+|-----|-------------|
+| `validate` | `terraform fmt` check + `terraform validate` |
+| `tfsec` | Static security analysis (SARIF to GitHub Security tab) |
+| `checkov` | Terraform policy compliance scanning |
 
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesBotControlRuleSet"
-        vendor_name = "AWS"
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "BotControlMetric"
-      sampled_requests_enabled   = true
-    }
-  }
-}
-```
-
-### Monitoring & Alerting
-
-```hcl
-# CloudWatch alarm for high block rate
-resource "aws_cloudwatch_metric_alarm" "waf_high_block_rate" {
-  alarm_name          = "waf-high-block-rate"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "BlockedRequests"
-  namespace           = "AWS/WAFV2"
-  period              = 300
-  statistic           = "Sum"
-  threshold           = 1000
-
-  dimensions = {
-    WebACL = aws_wafv2_web_acl.main.name
-    Region = var.aws_region
-    Rule   = "ALL"
-  }
-
-  alarm_actions = [var.sns_topic_arn]
-}
-```
+---
 
 ## Results
 
@@ -148,26 +140,38 @@ resource "aws_cloudwatch_metric_alarm" "waf_high_block_rate" {
 | Threat detection time | Hours to days | Real-time | Automated |
 | False positive rate | N/A | <0.1% | Minimal impact |
 
-## Tech Stack
-
-- **WAF:** AWS WAFv2 (WebACL, Rule Groups, IP Sets)
-- **IaC:** Terraform (modular configuration)
-- **CDN:** CloudFront
-- **Monitoring:** CloudWatch Metrics + Alarms, SNS notifications
-- **Logging:** WAF Logs -> S3 -> analysis
-- **Compliance:** GDPR, CCPA aligned
+---
 
 ## Key Learnings
 
-1. **Start with managed rules** - AWS Managed Rule Groups provide good baseline protection
-2. **Layer custom rules on top** - Application-specific rules catch what managed rules miss
-3. **Monitor before blocking** - Use COUNT mode first, then switch to BLOCK after tuning
+1. **Start with managed rules** - AWS Managed Rule Groups provide a solid baseline
+2. **Layer custom rules** - Application-specific rules catch what managed rules miss
+3. **Monitor before blocking** - Use COUNT mode first, switch to BLOCK after tuning
 4. **Automate IP list updates** - Integrate threat intelligence feeds for dynamic blocking
 5. **Regional considerations** - Different regions may need different rule configurations
 
+---
+
+## Tech Stack
+
+- **WAF:** AWS WAFv2 (WebACL, Rule Groups, IP Sets)
+- **IaC:** Terraform with input validation and CI/CD gates
+- **CDN:** CloudFront
+- **Monitoring:** CloudWatch Metrics + Alarms, SNS notifications
+- **Logging:** WAF Logs -> S3 -> analysis
+- **Compliance:** GDPR/CCPA aligned
+
+---
+
+## License
+
+MIT License - see [LICENSE](./LICENSE) for details.
+
+---
+
 ## Author
 
-**Mason Kim** - DevSecOps / Platform Security Engineer
+**Mason Kim** - DevSecOps Engineer
 - [LinkedIn](https://www.linkedin.com/in/junkukkim)
 - HashiCorp Certified: Terraform Associate (004)
 - Certified Ethical Hacker (CEH) - EC-Council
