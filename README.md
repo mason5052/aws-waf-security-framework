@@ -95,9 +95,40 @@ aws-waf-security-framework/
 ├── backend.tf.example         # S3 remote state backend template
 ├── .gitignore                 # Terraform-specific ignores
 ├── LICENSE                    # MIT License
-└── .github/
-    └── workflows/
-        └── terraform.yml      # CI: fmt, validate, tfsec, Checkov
+├── .github/
+│   └── workflows/
+│       └── terraform.yml      # CI: fmt, validate, tfsec, Checkov
+├── modules/
+│   └── waf-regional/          # Reusable Terraform module
+│       ├── main.tf            # Configurable WAF with dynamic rule toggles
+│       ├── variables.tf       # Module inputs (feature flags, thresholds)
+│       └── outputs.tf         # Module outputs (ACL ARN, ID, capacity)
+└── examples/
+    └── basic/
+        └── main.tf            # Example module usage
+```
+
+### Two Usage Modes
+
+**Root module (Quick Deploy):** Clone and apply directly for an opinionated eCommerce WAF with Bot Control, IP Reputation, Rate Limiting, and Geo Blocking.
+
+**Reusable module:** Reference `modules/waf-regional` for configurable deployments with additional protection layers (SQL injection, XSS, Known Bad Inputs, IP whitelisting, logging).
+
+```hcl
+module "waf" {
+  source = "github.com/mason5052/aws-waf-security-framework//modules/waf-regional"
+
+  name_prefix                       = "production"
+  enable_common_rules               = true
+  enable_sql_injection_protection   = true
+  enable_known_bad_inputs_protection = true
+  enable_ip_reputation_protection   = true
+  enable_rate_limiting              = true
+  rate_limit_threshold              = 2000
+  alb_arn                           = aws_lb.main.arn
+
+  tags = { Environment = "production" }
+}
 ```
 
 ---
