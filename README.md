@@ -9,6 +9,23 @@ Production-tested AWS WAF implementation for eCommerce platforms. Achieved 90%+ 
 
 ---
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Problem](#problem)
+- [Architecture](#architecture)
+- [Repository Structure](#repository-structure)
+- [Configuration](#configuration)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Results](#results)
+- [Key Learnings](#key-learnings)
+- [Tech Stack](#tech-stack)
+- [Contributing](#contributing)
+- [Author](#author)
+- [License](#license)
+
+---
+
 ## Quick Start
 
 ```bash
@@ -196,16 +213,24 @@ The GitHub Actions workflow runs on every push and PR:
 
 ---
 
-## License
+## Contributing
 
-MIT License - see [LICENSE](./LICENSE) for details.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
 ## Author
 
-**Mason Kim** - DevSecOps Engineer
-- [LinkedIn](https://www.linkedin.com/in/junkukkim)
-- HashiCorp Certified: Terraform Associate (004)
-- Certified Ethical Hacker (CEH) - EC-Council
-- MS Cybersecurity, Georgia Institute of Technology (In Progress)
+**Mason Kim** -- Security Engineer
+
+- GitHub: [@mason5052](https://github.com/mason5052)
+- LinkedIn: [Mason Kim](https://www.linkedin.com/in/junkukkim/)
+- Portfolio: [mason5052.github.io/mason-kim](https://mason5052.github.io/mason-kim/)
+- MS Cybersecurity, Georgia Institute of Technology
+- CEH | Terraform Associate (004) | CASE Java
+
+---
+
+## License
+
+MIT License - see [LICENSE](./LICENSE) for details.
