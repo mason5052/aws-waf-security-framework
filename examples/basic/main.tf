@@ -28,14 +28,14 @@ module "waf" {
   name_prefix = "basic-example"
 
   # Enable default protections
-  enable_common_rules              = true
-  enable_sql_injection_protection  = true
+  enable_common_rules                = true
+  enable_sql_injection_protection    = true
   enable_known_bad_inputs_protection = true
-  enable_ip_reputation_protection  = true
+  enable_ip_reputation_protection    = true
 
   # Rate limiting
-  enable_rate_limiting   = true
-  rate_limit_threshold   = 2000
+  enable_rate_limiting = true
+  rate_limit_threshold = 2000
 
   # Associate with ALB (optional)
   alb_arn = var.alb_arn

@@ -43,7 +43,7 @@ jobs:
           soft_fail: true
 
       - name: Upload SARIF
-        if: always()
+        if: always() && hashFiles('tfsec.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: tfsec.sarif
@@ -64,7 +64,7 @@ jobs:
           soft_fail: true
 
       - name: Upload SARIF
-        if: always()
+        if: always() && hashFiles('checkov.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: checkov.sarif

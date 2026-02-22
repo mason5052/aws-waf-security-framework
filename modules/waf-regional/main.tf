@@ -20,7 +20,7 @@ terraform {
 
 locals {
   waf_name = "${var.name_prefix}-waf"
-  
+
   default_tags = merge(var.tags, {
     ManagedBy = "terraform"
     Module    = "terraform-aws-waf-security"
